@@ -10,7 +10,9 @@ from utils.db.api.user import DBuser
 
 
 @rt.message(F.text == 'Категории')
-async def category(message: Message):
+async def category(message: Message, state: FSMContext):
+    history = ""
+    await state.update_data(history=history)
     markup = InlineKeyboardBuilder()
     if not await DBuser.return_category():
         await message.answer(f"Привет, <b>{message.from_user.full_name}</b>.")
@@ -23,6 +25,8 @@ async def category(message: Message):
 
 @rt.callback_query(lambda c: c.data and c.data.startswith('user_category_'))
 async def user_category_(call: CallbackQuery, state: FSMContext):
+    history = ""
+    await state.update_data(history=history)
     category = call.data.split("_")[2]
     category_id = await DBuser.return_category_id(category)
     questions = await DBuser.return_questions(category_id)
@@ -40,7 +44,9 @@ async def user_category_(call: CallbackQuery, state: FSMContext):
 
 
 @rt.callback_query(F.data == 'user_start_category')
-async def user_start_category(call: CallbackQuery):
+async def user_start_category(call: CallbackQuery, state: FSMContext):
+    history = ""
+    await state.update_data(history=history)
     markup = InlineKeyboardBuilder()
     if not await DBuser.return_category():
         await call.message.answer(f"Привет, <b>{call.from_user.full_name}</b>.")
@@ -57,6 +63,11 @@ async def user_questions_(call: CallbackQuery, state: FSMContext):
     question_id = await DBuser.return_question_id(question)
     await DBuser.update_question_popular(question)
     data = await state.get_data()
+    history = data["history"]
+    if history == "":
+        history = question
+    else:
+        history += f" -> {question}"
     try:
         answer = await DBuser.return_answer(question_id)
     except:
@@ -66,7 +77,7 @@ async def user_questions_(call: CallbackQuery, state: FSMContext):
         text = "У данного вопроса нету ответа"
     else:
         text = f"Ответ: <b>{answer[1]}</b>"
-        await state.update_data(answer_id=answer[0])
+        await state.update_data(answer_id=answer[0], history=history)
     questions = await DBuser.return_questions_on_question(question_id)
     if not questions:
         markup.row(InlineKeyboardButton(text="Связаться с сотрудником", callback_data=f"contact_user"))
@@ -89,9 +100,11 @@ async def contact_user(call: CallbackQuery, state: FSMContext):
             await call.message.answer(f"Все сотрудники сейчас заняты, либо находятся в оффлайне, попробуйте позже")
             await state.clear()
         else:
+            await DBuser.add_history(call.from_user.id, data["history"])
             await call.message.answer("Связываем вас с сотрудником. Ожидайте ответа")
+            history = await DBuser.return_history(call.from_user.id)
             markup.row(InlineKeyboardButton(text="Связаться", callback_data=f"call_accept_{call.from_user.id}", style="success"))
-            await bot.send_message(employee, text=f"Пользователь {call.from_user.full_name} хочет связаться с сотрудником", reply_markup=markup.as_markup())
+            await bot.send_message(employee, text=f"Пользователь {call.from_user.full_name} хочет связаться с сотрудником \nИстория: {history}", reply_markup=markup.as_markup())
     except:
         await call.message.answer(f"Все сотрудники сейчас заняты, либо находятся в оффлайне, попробуйте позже")
         await state.clear()

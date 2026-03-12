@@ -84,6 +84,12 @@ class DBuser:
         session.commit()
 
     @staticmethod
+    async def add_history(user_id, text):
+        history = History(user_id=user_id, text=text)
+        session.add(history)
+        session.commit()
+
+    @staticmethod
     async def add_category(name):
         category = Category(name=name)
         session.add(category)
@@ -151,6 +157,11 @@ class DBuser:
     async def return_employee_by_category(category):
         employee = session.query(Employee).filter_by(category=category, status=1, session=0).first()
         return employee.user_id
+
+    @staticmethod
+    async def return_history(ids):
+        history = session.query(History).filter_by(user_id=ids).first()
+        return history.text
 
     @staticmethod
     async def return_employee_category():
@@ -328,6 +339,13 @@ class DBuser:
         category = session.query(Category).filter_by(name=name).first()
         if category:
             session.delete(category)
+            session.commit()
+
+    @staticmethod
+    async def del_history(ids):
+        history = session.query(History).filter_by(user_id=ids).first()
+        if history:
+            session.delete(history)
             session.commit()
 
     @staticmethod

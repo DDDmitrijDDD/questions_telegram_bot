@@ -18,6 +18,7 @@ async def complete(message: Message):
     markup = await create_markup('reply', [[["Изменить статус"]]])
     await bot.send_message(emp_id, text="Пользователь завершил с вами связь", reply_markup=markup)
     markup = await create_markup('reply', [[["Категории"]]])
+    await DBuser.del_history(message.from_user.id)
     await message.answer(f"Вы завершили связь с сотрудником", reply_markup=markup)
 
 
