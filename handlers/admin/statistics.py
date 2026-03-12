@@ -13,14 +13,17 @@ from utils.system.adminka import AdminIs
 @rt.message(F.text == 'Статистика', AdminIs())
 async def category(message: Message):
     text = ""
-    question = await DBuser.return_all_questions()
-    summa = sum(await DBuser.return_questions_popularity())
-    a = 0
-    for i in question:
-        category = await DBuser.return_category_by_id(i[1])
-        if a == 0:
-            text += f"{category} -> {i[0]} -> {round(i[2] / summa * 100, 2)}%"
-        else:
-            text += f"\n{category} -> {i[0]} -> {round(i[2] / summa * 100, 2)}%"
-        a += 1
-    await message.answer(f"{text}")
+    try:
+        question = await DBuser.return_all_questions()
+        summa = sum(await DBuser.return_questions_popularity())
+        a = 0
+        for i in question:
+            category = await DBuser.return_category_by_id(i[1])
+            if a == 0:
+                text += f"{category} -> {i[0]} -> {round(i[2] / summa * 100, 2)}%"
+            else:
+                text += f"\n{category} -> {i[0]} -> {round(i[2] / summa * 100, 2)}%"
+            a += 1
+        await message.answer(f"{text}")
+    except:
+        await message.answer(f"Статистики нету")
